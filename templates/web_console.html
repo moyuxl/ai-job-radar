@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 职位雷达 - Web 操作台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles/console.css">
+</head>
+<body>
+    <div class="radar-bg"></div>
+    <div class="container">
+        <header class="page-header">
+            <h1><span class="radar-icon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="12"/><line x1="12" y1="12" x2="21" y2="12"/></svg></span> AI 职位雷达</h1>
+            <p class="subtitle">招聘职位信息采集/分析工作台</p>
+        </header>
+        
+        <section class="form-section" id="crawlSection">
+            <form id="crawlForm">
+                <div class="form-group">
+                    <label>职位关键词 *</label>
+                    <div class="keyword-presets">
+                        <button type="button" class="preset-chip" data-keyword="Python开发">Python开发</button>
+                        <button type="button" class="preset-chip" data-keyword="AI产品经理">AI产品经理</button>
+                        <button type="button" class="preset-chip" data-keyword="AI Agent开发">AI Agent开发</button>
+                        <button type="button" class="preset-chip" data-keyword="大模型">大模型</button>
+                    </div>
+                    <input type="text" id="keyword" name="keyword" placeholder="例如：Python开发、AI产品经理" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>城市</label>
+                        <select id="city" name="city">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>学历要求</label>
+                        <select id="degree" name="degree">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>工作经验</label>
+                        <select id="experience" name="experience">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>薪资范围</label>
+                        <select id="salary" name="salary">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>最大页数</label>
+                        <input type="number" id="max_pages" name="max_pages" value="1" min="1" max="20">
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">&nbsp;</label>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="crawl_details" name="crawl_details" checked>
+                            <label for="crawl_details" class="checkbox-text">爬取详情页（包含职位描述）</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" id="startBtn" class="btn btn-primary"><span class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l3-4"/></svg></span>开始抓取</button>
+            </form>
+        </section>
+        
+        <section class="form-section" id="analysisSection">
+            <h2 class="section-title"><span class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>深度分析</h2>
+            <form id="analysisForm">
+                <div class="form-row">
+                    <div class="form-group form-group-full">
+                        <label>原始数据文件路径</label>
+                        <input type="text" id="excel_path" name="excel_path" placeholder="例如: output/boss_AI agent 开发_xxx.xlsx" required>
+                        <small class="form-hint">输入上一步抓取生成的 Excel 文件路径，或选择最近一次抓取结果</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>分析模型</label>
+                        <select id="analysis_model" name="analysis_model">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" id="startAnalysisBtn" class="btn btn-secondary"><span class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>开始分析</button>
+            </form>
+        </section>
+        
+        <section class="status-section" id="statusSection">
+            <div class="status-card">
+                <div class="status-header">
+                    <h3>任务状态</h3>
+                    <span class="status-badge idle" id="statusBadge">空闲</span>
+                </div>
+                
+                <div class="confirm-section" id="confirmSection">
+                    <div class="confirm-message" id="confirmMessage"></div>
+                    <button type="button" id="confirmBtn" class="btn btn-confirm"><span class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></span>我已登录，继续执行</button>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+                </div>
+                
+                <div class="progress-text" id="progressText">等待开始...</div>
+                
+                <div class="logs-container" id="logsContainer">
+                    <div class="log-entry INFO">等待任务开始...</div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="result-section" id="resultSection">
+            <h3><span class="section-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>结果文件</h3>
+            <div id="resultContent"></div>
+        </section>
+        
+        <section class="top10-section" id="top10Section">
+            <h3><span class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 20"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 20"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>Top 10 职位推荐</h3>
+            <div class="top10-grid" id="top10Grid"></div>
+        </section>
+    </div>
+    
+    <script>
+        let currentTaskId = null;
+        let statusCheckInterval = null;
+        
+        async function loadOptions() {
+            const formSections = document.querySelectorAll('.form-section');
+            formSections.forEach(s => s.classList.add('loading'));
+            try {
+                const citiesRes = await fetch('/api/options/cities');
+                const citiesData = await citiesRes.json();
+                const citySelect = document.getElementById('city');
+                citySelect.innerHTML = '';
+                citiesData.options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.code;
+                    opt.textContent = option.name;
+                    if (option.code === '100010000') opt.selected = true;
+                    citySelect.appendChild(opt);
+                });
+                
+                const degreesRes = await fetch('/api/options/degrees');
+                const degreesData = await degreesRes.json();
+                const degreeSelect = document.getElementById('degree');
+                degreeSelect.innerHTML = '';
+                degreesData.options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.code;
+                    opt.textContent = option.name;
+                    if (option.code === '0') opt.selected = true;
+                    degreeSelect.appendChild(opt);
+                });
+                
+                const experiencesRes = await fetch('/api/options/experiences');
+                const experiencesData = await experiencesRes.json();
+                const experienceSelect = document.getElementById('experience');
+                experienceSelect.innerHTML = '';
+                experiencesData.options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.code;
+                    opt.textContent = option.name;
+                    if (option.code === '') opt.selected = true;
+                    experienceSelect.appendChild(opt);
+                });
+                
+                const salariesRes = await fetch('/api/options/salaries');
+                const salariesData = await salariesRes.json();
+                const salarySelect = document.getElementById('salary');
+                salarySelect.innerHTML = '';
+                salariesData.options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.code;
+                    opt.textContent = option.name;
+                    if (option.code === '') opt.selected = true;
+                    salarySelect.appendChild(opt);
+                });
+                
+                const modelsRes = await fetch('/api/options/models');
+                const modelsData = await modelsRes.json();
+                const modelSelect = document.getElementById('analysis_model');
+                modelSelect.innerHTML = '';
+                modelsData.options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.id;
+                    opt.textContent = option.name;
+                    if (modelsData.options.indexOf(option) === 0) opt.selected = true;
+                    modelSelect.appendChild(opt);
+                });
+                formSections.forEach(s => s.classList.remove('loading'));
+            } catch (error) {
+                console.error('加载选项失败:', error);
+                formSections.forEach(s => s.classList.remove('loading'));
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            loadOptions();
+            document.querySelectorAll('.preset-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    document.getElementById('keyword').value = chip.dataset.keyword;
+                    document.getElementById('keyword').focus();
+                });
+            });
+        });
+        
+        document.getElementById('crawlForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                keyword: document.getElementById('keyword').value,
+                city: document.getElementById('city').value || '100010000',
+                degree: document.getElementById('degree').value || '',
+                experience: document.getElementById('experience').value ?? '',
+                salary: document.getElementById('salary').value || '',
+                max_pages: parseInt(document.getElementById('max_pages').value) || 1,
+                crawl_details: document.getElementById('crawl_details').checked
+            };
+            try {
+                const response = await fetch('/api/crawl/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    currentTaskId = data.task_id;
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('statusSection').classList.add('show');
+                    startStatusPolling();
+                } else {
+                    alert('启动失败: ' + data.detail);
+                }
+            } catch (error) {
+                alert('请求失败: ' + error.message);
+            }
+        });
+        
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const excelPath = document.getElementById('excel_path').value.trim();
+            if (!excelPath) {
+                alert('请输入原始数据文件路径');
+                return;
+            }
+            try {
+                const modelId = document.getElementById('analysis_model').value || '';
+                const response = await fetch('/api/analysis/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ excel_path: excelPath, model_id: modelId })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    currentTaskId = data.task_id;
+                    document.getElementById('startAnalysisBtn').disabled = true;
+                    document.getElementById('statusSection').classList.add('show');
+                    startStatusPolling();
+                } else {
+                    alert('启动分析失败: ' + data.detail);
+                }
+            } catch (error) {
+                alert('请求失败: ' + error.message);
+            }
+        });
+        
+        function startStatusPolling() {
+            if (statusCheckInterval) clearInterval(statusCheckInterval);
+            statusCheckInterval = setInterval(async () => {
+                if (!currentTaskId) return;
+                try {
+                    const response = await fetch(`/api/task/${currentTaskId}/status`);
+                    const data = await response.json();
+                    updateStatus(data);
+                    if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
+                        clearInterval(statusCheckInterval);
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('startAnalysisBtn').disabled = false;
+                        if (data.status === 'completed') {
+                            if (data.result.output_file && !data.top10_file) {
+                                document.getElementById('excel_path').value = data.result.output_file;
+                            }
+                            const top10File = data.top10_file || data.result.output_file;
+                            if (top10File) loadTop10(top10File);
+                        }
+                    }
+                } catch (error) {
+                    console.error('获取状态失败:', error);
+                }
+            }, 2000);
+        }
+        
+        function updateStatus(data) {
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.textContent = getStatusText(data.status);
+            statusBadge.className = 'status-badge ' + data.status;
+            
+            const confirmSection = document.getElementById('confirmSection');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmBtn');
+            
+                if (data.status === 'waiting_confirm' && data.waiting_message) {
+                confirmSection.classList.add('show');
+                confirmMessage.textContent = data.waiting_message;
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<span class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></span>我已登录，继续执行';
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.cursor = 'pointer';
+                confirmSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                confirmSection.classList.remove('show');
+            }
+            
+            const progress = data.progress;
+            const percentage = progress.percentage || 0;
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = percentage + '%';
+            progressFill.textContent = percentage.toFixed(1) + '%';
+            
+            document.getElementById('progressText').textContent = `${progress.current} / ${progress.total} (${percentage.toFixed(1)}%)`;
+            
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.innerHTML = '';
+            data.logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry ' + log.level;
+                logEntry.textContent = `[${log.timestamp.split('T')[1].split('.')[0]}] ${log.message}`;
+                logsContainer.appendChild(logEntry);
+            });
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            if (data.result.output_file) {
+                const resultSection = document.getElementById('resultSection');
+                const resultContent = document.getElementById('resultContent');
+                resultSection.classList.add('show');
+                let resultHtml = `
+                    <p><strong>结果文件:</strong> <a href="/api/file/${encodeURIComponent(data.result.output_file)}" class="result-link" target="_blank">${data.result.output_file}</a></p>
+                    <p><strong>成功:</strong> ${data.result.success_count} | <strong>失败:</strong> ${data.result.failed_count}</p>
+                `;
+                if (data.top10_file) {
+                    resultHtml += `<p><strong>Top10 摘要:</strong> <a href="/api/file/${encodeURIComponent(data.top10_file)}" class="result-link" target="_blank">${data.top10_file}</a></p>`;
+                }
+                if (data.result.total_tokens) {
+                    resultHtml += `<p><strong>Token 统计:</strong> 总输入 ${data.result.total_input_tokens || 0}, 总输出 ${data.result.total_output_tokens || 0}, 总计 ${data.result.total_tokens}</p>`;
+                }
+                resultContent.innerHTML = resultHtml;
+            }
+            
+            if (data.error) {
+                const errorEntry = document.createElement('div');
+                errorEntry.className = 'log-entry ERROR';
+                errorEntry.textContent = `[错误] ${data.error}`;
+                logsContainer.appendChild(errorEntry);
+            }
+        }
+        
+        function getStatusText(status) {
+            const statusMap = {
+                'idle': '空闲',
+                'running': '运行中',
+                'waiting_confirm': '等待确认',
+                'completed': '完成',
+                'failed': '失败',
+                'cancelled': '已取消'
+            };
+            return statusMap[status] || status;
+        }
+        
+        document.getElementById('confirmBtn').addEventListener('click', async () => {
+            if (!currentTaskId) {
+                alert('没有活动任务');
+                return;
+            }
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '确认中...';
+            confirmBtn.style.opacity = '0.6';
+            confirmBtn.style.cursor = 'not-allowed';
+            try {
+                const response = await fetch(`/api/task/${currentTaskId}/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    alert('确认失败: ' + (data.detail || '未知错误'));
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<span class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></span>我已登录，继续执行';
+                    confirmBtn.style.opacity = '1';
+                    confirmBtn.style.cursor = 'pointer';
+                }
+            } catch (error) {
+                console.error('确认请求失败:', error);
+                alert('请求失败: ' + error.message);
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = '✅ 我已登录，继续执行';
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.cursor = 'pointer';
+            }
+        });
+        
+        async function loadTop10(filePath) {
+            try {
+                const response = await fetch(`/api/top10/${encodeURIComponent(filePath)}`);
+                const data = await response.json();
+                const top10Section = document.getElementById('top10Section');
+                const top10Grid = document.getElementById('top10Grid');
+                top10Section.classList.add('show');
+                if (data.top10 && data.top10.length > 0) {
+                    top10Grid.innerHTML = '';
+                    data.top10.forEach((job, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'job-card';
+                        let cardContent = `
+                            <div class="job-title">${index + 1}. ${job.岗位名称 || '未知'}</div>
+                            <div class="job-info">公司: ${job.公司名称 || '未知'}</div>
+                            <div class="job-info">地点: ${job.工作地点 || '未知'}</div>
+                            <div class="job-info">薪资: ${job.薪资范围 || '未知'}</div>
+                        `;
+                        if (job.综合评分 !== undefined && job.综合评分 !== null) {
+                            cardContent += `<div class="job-info"><strong>综合评分:</strong> ${job.综合评分.toFixed(1)}`;
+                            if (job.信息完整度 !== undefined) {
+                                cardContent += ` (完整度: ${job.信息完整度.toFixed(1)}, 可执行性: ${job.可执行性?.toFixed(1) || '0'})`;
+                            }
+                            cardContent += `</div>`;
+                        }
+                        if (job.工作内容) {
+                            cardContent += `<details class="job-details"><summary>工作内容</summary><div class="job-content">${job.工作内容.replace(/\n/g, '<br>')}</div></details>`;
+                        }
+                        if (job.评分理由) {
+                            cardContent += `<div class="job-reason">${job.评分理由}</div>`;
+                        }
+                        if (job.岗位链接) {
+                            cardContent += `<a href="${job.岗位链接}" class="job-link" target="_blank">查看详情 →</a>`;
+                        }
+                        card.innerHTML = cardContent;
+                        top10Grid.appendChild(card);
+                    });
+                } else {
+                    top10Grid.innerHTML = `
+                        <div class="top10-empty">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <p>暂无推荐数据</p>
+                            <span>完成抓取并分析后，将在此展示 Top 10 职位</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载 Top10 失败:', error);
+                const top10Section = document.getElementById('top10Section');
+                top10Section.classList.add('show');
+                document.getElementById('top10Grid').innerHTML = '<div class="top10-error"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><p>加载失败</p><span>' + error.message + '</span></div>';
+            }
+        }
+    </script>
+</body>
+</html>
